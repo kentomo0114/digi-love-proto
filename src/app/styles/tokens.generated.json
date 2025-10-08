@@ -1,0 +1,9 @@
+{
+  "--dl-font-display-family": "\"Pixelify Sans\"",
+  "--dl-font-display-size-lg": "70px",
+  "--dl-color-fg": "#ffffff",
+  "--dl-color-border-subtle": "#f5f5f5",
+  "--dl-rect-demo-w": "349px",
+  "--dl-rect-demo-h": "140px",
+  "--dl-rect-demo-stroke": "3px"
+}

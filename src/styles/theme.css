@@ -1,0 +1,294 @@
+:root {
+  /* Colors */
+  --bg: #0a0d14;
+  --panel: rgba(255, 255, 255, 0.02);
+  --panel-strong: rgba(255, 255, 255, 0.04);
+  --stroke: rgba(255, 255, 255, 0.08);
+  --stroke-strong: rgba(0, 229, 255, 0.4);
+  --ink: #e6eaf2;
+  --ink-muted: rgba(230, 234, 242, 0.72);
+  --ink-soft: rgba(230, 234, 242, 0.45);
+  --accent: #00e5ff;
+  --accent-soft: rgba(0, 229, 255, 0.16);
+  --tone-ccd: #34f5c5;
+  --tone-ccd-soft: rgba(52, 245, 197, 0.16);
+  --tone-cmos: #38bdf8;
+  --tone-cmos-soft: rgba(56, 189, 248, 0.18);
+  --tone-foveon: #a855f7;
+  --tone-foveon-soft: rgba(168, 85, 247, 0.18);
+  --tone-unknown: rgba(230, 234, 242, 0.55);
+  --tone-error: #ff6b6b;
+  --tone-error-soft: rgba(255, 107, 107, 0.16);
+  --tone-warning: #facc15;
+  --tone-warning-soft: rgba(250, 204, 21, 0.18);
+
+  /* Radii */
+  --r-card: 12px;
+  --r-pill: 999px;
+
+  /* Spacing (8px baseline) */
+  --s-0: 0px;
+  --s-1: 8px;
+  --s-2: 16px;
+  --s-3: 24px;
+  --s-4: 32px;
+  --s-5: 40px;
+
+  /* Typography */
+  --fs-xxs: 0.625rem;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --fs-display: 2.5rem;
+  --fs-counter: 3rem;
+  --lh-tight: 1.2;
+  --lh-default: 1.4;
+  --lh-loose: 1.6;
+  --ls-base: 0.02em;
+  --ls-wide: 0.32em;
+  --ls-wider: 0.42em;
+
+  /* Effects */
+  --frame: 0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 0 2px rgba(0, 0, 0, 0.5) inset;
+  --frame-strong: 0 0 0 1px rgba(0, 229, 255, 0.35) inset,
+    0 0 0 2px rgba(0, 0, 0, 0.55) inset;
+  --shadow-soft: 0 24px 48px -24px rgba(0, 0, 0, 0.55);
+  --shadow-hard: 0 32px 64px -28px rgba(0, 0, 0, 0.65);
+  --gradient-scrim-strong: linear-gradient(180deg, rgba(3, 6, 14, 0.85), rgba(3, 6, 14, 0));
+  --gradient-scrim-soft: linear-gradient(180deg, rgba(2, 6, 23, 0.7), rgba(2, 6, 23, 0));
+
+  /* Layout helpers */
+  --container-max: 1200px;
+  --divider-thin: 1px;
+}
+
+.pixel-bg {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.pixel-frame {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-card);
+  box-shadow: var(--frame);
+  color: inherit;
+}
+
+.pixel-notch {
+  position: relative;
+}
+
+.pixel-notch::before,
+.pixel-notch::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--s-1));
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--accent), rgba(0, 229, 255, 0.35));
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.pixel-notch::before {
+  left: calc(var(--s-2));
+}
+
+.pixel-notch::after {
+  right: calc(var(--s-2));
+}
+
+.token-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap, var(--s-2));
+  padding-inline: var(--stack-px, 0);
+  padding-block: var(--stack-py, 0);
+}
+
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: var(--row-gap, var(--s-2));
+}
+
+.token-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: calc(var(--s-1) * 0.875);
+  padding-block: calc(var(--s-1) * 0.5);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--stroke);
+  background: var(--panel-strong);
+  font-size: var(--fs-xxs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.pixel-chip[data-sensor="CCD"] {
+  color: var(--tone-ccd);
+  border-color: var(--tone-ccd);
+  background: var(--tone-ccd-soft);
+}
+
+.pixel-chip[data-sensor="CMOS"] {
+  color: var(--tone-cmos);
+  border-color: var(--tone-cmos);
+  background: var(--tone-cmos-soft);
+}
+
+.pixel-chip[data-sensor="FOVEON"] {
+  color: var(--tone-foveon);
+  border-color: var(--tone-foveon);
+  background: var(--tone-foveon-soft);
+}
+
+.pixel-chip[data-sensor="UNKNOWN"] {
+  color: var(--tone-unknown);
+  border-color: var(--stroke);
+  background: var(--panel-strong);
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.upload-button {
+  min-width: 160px;
+}
+
+.upload-hint {
+  font-size: var(--fs-xxs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.upload-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  background: var(--panel);
+  border-radius: var(--r-card);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-soft);
+}
+
+.upload-preview-list {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.upload-preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  border-radius: var(--r-card);
+  background: var(--panel-strong);
+  border: 1px solid var(--stroke);
+}
+
+.upload-preview-card[data-blocked="true"] {
+  border-color: var(--tone-warning);
+  background: var(--tone-warning-soft);
+}
+
+.upload-preview-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-xxs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.upload-preview-warning {
+  font-size: var(--fs-xxs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--tone-warning);
+  font-weight: 600;
+}
+
+.upload-preview-card dl {
+  display: grid;
+  gap: calc(var(--s-1) * 0.5);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-base);
+}
+
+.upload-preview-card dt {
+  font-size: var(--fs-xxs);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.upload-preview-card dd {
+  margin: 0;
+  font-family: var(--font-geist-mono);
+  color: var(--ink);
+}
+
+.hero-controls {
+  margin-top: var(--s-3);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.hero-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.hero-search-input {
+  min-width: clamp(220px, 40vw, 320px);
+}
+
+.hero-action-button {
+  min-width: 140px;
+}
+
+.hero-upload input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

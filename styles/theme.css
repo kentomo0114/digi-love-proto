@@ -1,0 +1,32 @@
+:root{
+  /* ←ここにFigmaの値を直接コピペしていく */
+  --dl-bg: #0b0b0b;        /* 背景 */
+  --dl-fg: #fafafa;        /* 文字色 */
+  --dl-border: rgba(255,255,255,.12); /* 枠線（暗背景用） */
+  --dl-accent: #6ee7ff;    /* アクセント */
+  --dl-radius: 8px;        /* 角丸（Figmaのcorner radiusに合わせる） */
+  --dl-gap: 12px;          /* ベースの間隔 */
+  --dl-font-display: var(--font-pixel, "Pixelify Sans", system-ui, sans-serif); /* Figmaのタイトル用フォント */
+  --dl-font-body: var(--font-noto, "Noto Sans JP", system-ui, sans-serif);     /* 本文 */
+}
+
+/* 2000年代ブログ風の黒UIの雰囲気 */
+html,body{ background:var(--dl-bg); color:var(--dl-fg); }
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+.pixel-card{
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--dl-border);
+  border-radius: var(--dl-radius);
+}
+.pixel-title{
+  font-family: var(--dl-font-display);
+  letter-spacing: .01em;
+}
+.pixel-meta{ opacity:.7 }
+.pixel-input{
+  background: transparent;
+  color: var(--dl-fg);
+  box-shadow: inset 0 0 0 1px var(--dl-border);
+  border-radius: calc(var(--dl-radius) - 2px);
+  padding: 8px 10px;
+}

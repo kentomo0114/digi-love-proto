@@ -1,0 +1,50 @@
+{
+  "models": {
+    "CANON IXY 610F": "CMOS",
+    "CANON POWERSHOT G7": "CCD",
+    "CANON POWERSHOT A620": "CCD",
+    "CANON POWERSHOT G3": "CCD",
+    "CANON POWERSHOT G5": "CCD",
+    "CANON POWERSHOT S95": "CCD",
+    "CANON POWERSHOT G12": "CCD",
+    "FUJIFILM FINEPIX F31FD": "CCD",
+    "PANASONIC LUMIX LX3": "CCD",
+    "OLYMPUS XZ-1": "CCD",
+    "OLYMPUS SP-570UZ": "CCD",
+    "RICOH GR DIGITAL II": "CCD",
+    "LEICA D-LUX 4": "CCD",
+    "SIGMA DP1 MERRILL": "FOVEON",
+    "SIGMA DP2 MERRILL": "FOVEON",
+    "SONY CYBER-SHOT DSC-RX100": "CMOS",
+    "SONY CYBER-SHOT DSC-RX1": "CMOS",
+    "FUJIFILM X100F": "CMOS",
+    "RICOH GR IIIX": "CMOS",
+    "NIKON COOLPIX A": "CMOS",
+    "PANASONIC LUMIX GF1": "CMOS"
+  },
+  "aliases": {
+    "CANON IXY 610F": [
+      "IXY 610F",
+      "Canon IXY 610F",
+      "Canon DIGITAL IXY 610F",
+      "Canon IXY DIGITAL 610F",
+      "IXY610F"
+    ],
+    "CANON POWERSHOT G7": [
+      "Canon PowerShot G7",
+      "PowerShot G7",
+      "POWERSHOT G7"
+    ],
+    "SIGMA DP1 MERRILL": [
+      "Sigma DP1 Merrill",
+      "SIGMA DP1 Merrill"
+    ],
+    "SIGMA DP2 MERRILL": [
+      "Sigma DP2 Merrill",
+      "SIGMA DP2 Merrill"
+    ]
+  },
+  "patterns": {
+    "^SIGMA DP( |$)": "FOVEON"
+  }
+}

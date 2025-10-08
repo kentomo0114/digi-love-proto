@@ -1,0 +1,8 @@
+{
+  "fileKey": "YOUR_FILE_KEY_HERE",
+  "variableScope": "local",
+  "frames": {
+    "Home": ["FRAME_ID_HOME"],
+    "Search": ["FRAME_ID_SEARCH"]
+  }
+}
