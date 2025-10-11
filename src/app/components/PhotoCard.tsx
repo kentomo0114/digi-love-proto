@@ -1,20 +1,15 @@
 "use client";
 
+import type { ExifSummary, SensorKind } from "@/types";
+
 export type Photo = {
   id: string;
   src: string;
   alt: string;
   width: number;
   height: number;
-  exif?: {
-    make?: string;
-    camera?: string;
-    lens?: string;
-    iso?: number;
-    f?: string;
-    s?: string;
-    year?: number;
-  };
+  exif?: ExifSummary;
+  sensor?: SensorKind;
 };
 
 type PhotoCardProps = {

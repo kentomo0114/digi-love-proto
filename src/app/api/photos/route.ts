@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { photos } from "@/data/photos";
 import { classifySensor } from "@/lib/exif/classifySensor";
+import { sensorTypeToKind } from "@/types";
 
 function toBoolean(value: string | null): boolean {
   if (!value) return false;
@@ -14,12 +15,14 @@ export function GET(request: Request) {
 
   const enriched = photos.map((photo) => {
     const exif = photo.exif ?? {};
-    const sensor = classifySensor({ make: exif.make, model: exif.camera, lens: exif.lens });
-    const verdict = sensor === "CCD";
-    const status = exif.camera ? (sensor === "UNKNOWN" ? "unknown" : verdict ? "ccd" : "non-ccd") : "unknown";
+    const sensorType = classifySensor({ make: exif.make, model: exif.camera, lens: exif.lens });
+    const sensor = sensorTypeToKind(sensorType);
+    const verdict = sensorType === "CCD";
+    const status = exif.camera ? (sensorType === "UNKNOWN" ? "unknown" : verdict ? "ccd" : "non-ccd") : "unknown";
 
     return {
       ...photo,
+      sensor,
       exif: {
         ...exif,
         ccd: verdict,

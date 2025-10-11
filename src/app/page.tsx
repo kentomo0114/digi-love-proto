@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ArchiveExplorer } from "./components/ArchiveExplorer";
 
 export default function Page() {
@@ -39,7 +41,9 @@ export default function Page() {
         </div>
       </div>
 
-      <ArchiveExplorer syncWithUrl={false} />
+      <Suspense fallback={<div style={{ textAlign: "center", color: "var(--ink-muted)" }}>Loading archive…</div>}>
+        <ArchiveExplorer syncWithUrl={false} />
+      </Suspense>
     </main>
   );
 }

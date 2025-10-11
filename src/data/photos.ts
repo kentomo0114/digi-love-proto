@@ -1,4 +1,4 @@
-import type { SensorType } from "@/types";
+import type { ExifSummary, SensorKind } from "@/types";
 
 export type PhotoRecord = {
   id: string;
@@ -6,16 +6,8 @@ export type PhotoRecord = {
   alt: string;
   width: number;
   height: number;
-  exif?: {
-    make?: string;
-    camera?: string;
-    lens?: string;
-    iso?: number;
-    f?: string;
-    s?: string;
-    year?: number;
-    sensor?: SensorType;
-  };
+  exif?: ExifSummary;
+  sensor?: SensorKind;
 };
 
 export const photos: PhotoRecord[] = [

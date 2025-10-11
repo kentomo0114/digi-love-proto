@@ -5,8 +5,8 @@ import { usePathname, useRouter, useSearchParams, type ReadonlyURLSearchParams }
 
 import { ExploreGrid, type Photo } from "./ExploreGrid";
 import { FilterBar, FILTER_ALL, SENSOR_FILTER_ANY, type FilterState } from "./FilterBar";
-import type { SensorType } from "@/types";
-import { SENSOR_TYPES } from "@/types";
+import type { SensorKind, SensorType } from "@/types";
+import { SENSOR_TYPES, sensorKindToType, sensorTypeToKind, toSensorKind } from "@/types";
 import { classifySensor } from "@/lib/exif/classifySensor";
 import { getCameraReleaseYear } from "@/lib/exif/getCameraReleaseYear";
 import { isClassicCamera } from "@/lib/exif/isClassicCamera";
@@ -33,8 +33,14 @@ const DEFAULT_FILTERS: FilterState = {
   sort: "NEWEST",
 };
 
+type ArchivePhoto = Photo & {
+  meta?: {
+    sensor?: SensorKind;
+  };
+};
+
 type ApiResponse = {
-  photos: Photo[];
+  photos: ArchivePhoto[];
 };
 
 type ArchiveExplorerProps = {
@@ -56,10 +62,23 @@ type PendingUpload = {
   id: string;
   fileName: string;
   fileSize: string;
-  photo: Photo;
+  photo: ArchivePhoto;
   summary: SummaryItem[];
   releaseYear?: number;
   isBlocked: boolean;
+};
+
+const normalizePhotoSensor = (photo: ArchivePhoto): ArchivePhoto => {
+  const sensor: SensorKind = toSensorKind(
+    (photo as { exif?: { sensor?: unknown }; sensor?: unknown }).exif?.sensor ??
+      (photo as { sensor?: unknown }).sensor ??
+      null
+  );
+  return {
+    ...photo,
+    sensor,
+    exif: photo.exif ? { ...photo.exif, sensor } : photo.exif,
+  };
 };
 
 const UploadGlyph = (props: React.SVGProps<SVGSVGElement>) => (
@@ -160,7 +179,7 @@ const formatFileSize = (bytes: number): string => {
   return `${formatNumber(value, value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${units[exponent]}`;
 };
 
-const buildSummary = (photo: Photo, releaseYear?: number, isBlocked?: boolean): SummaryItem[] => {
+const buildSummary = (photo: ArchivePhoto, releaseYear?: number, isBlocked?: boolean): SummaryItem[] => {
   const summary: SummaryItem[] = [];
   const add = (label: string, raw: unknown, formatter?: (value: unknown) => string | null) => {
     const formatted = formatter ? formatter(raw) : raw == null ? null : String(raw);
@@ -176,7 +195,8 @@ const buildSummary = (photo: Photo, releaseYear?: number, isBlocked?: boolean): 
   add("Aperture", photo.exif?.f);
   add("Shutter", photo.exif?.s);
   add("Year", photo.exif?.year);
-  add("Sensor", photo.exif?.sensor);
+  const sensor = photo.exif?.sensor ?? photo.sensor ?? photo.meta?.sensor;
+  add("Sensor", sensor);
   add("Release", releaseYear);
   add("Status", isBlocked ? "TOO NEW" : "OK");
   return summary;
@@ -221,10 +241,28 @@ function extractYear(value: unknown): number | undefined {
 async function parsePendingFile(file: File): Promise<PendingUpload | null> {
   const objectUrl = URL.createObjectURL(file);
 
+  type ExifrOptions = {
+    tiff?: boolean;
+    ifd0?: Record<string, unknown>;
+    exif?: boolean;
+    xmp?: boolean;
+    icc?: boolean;
+    iptc?: boolean;
+  };
+
+  const exifrOptions: ExifrOptions = {
+    tiff: true,
+    ifd0: {},
+    exif: true,
+    xmp: true,
+    icc: true,
+    iptc: true,
+  };
+
   let exifRaw: Record<string, unknown> | null = null;
   try {
     const { parse } = await import("exifr");
-    exifRaw = (await parse(file, { tiff: true, ifd0: true, exif: true, xmp: true, icc: true, iptc: true })) as
+    exifRaw = (await parse(file, exifrOptions)) as
       | Record<string, unknown>
       | null;
   } catch (error) {
@@ -240,7 +278,8 @@ async function parsePendingFile(file: File): Promise<PendingUpload | null> {
   const s = formatExposure(exifRaw?.ExposureTime ?? exifRaw?.ShutterSpeedValue ?? null) ?? undefined;
   const year = extractYear(exifRaw?.DateTimeOriginal ?? exifRaw?.CreateDate ?? exifRaw?.ModifyDate ?? null);
 
-  const sensor = classifySensor({ make, model: camera, lens });
+  const sensorType = classifySensor({ make, model: camera, lens });
+  const sensor = sensorTypeToKind(sensorType);
   const isClassic = isClassicCamera({ make, model: camera });
 
   const releaseYear = getCameraReleaseYear({ make, model: camera });
@@ -248,16 +287,17 @@ async function parsePendingFile(file: File): Promise<PendingUpload | null> {
     ? false
     : releaseYear !== undefined
       ? releaseYear > RELEASE_YEAR_CUTOFF
-      : sensor !== "CCD";
+      : sensorType !== "CCD";
 
   const { width, height } = await getImageDimensions(objectUrl);
 
-  const photo: Photo = {
+  const photo: ArchivePhoto = {
     id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     src: objectUrl,
     alt: file.name,
     width,
     height,
+    sensor,
     exif: {
       make,
       camera,
@@ -320,7 +360,7 @@ function filtersEqual(a: FilterState, b: FilterState): boolean {
   );
 }
 
-function toKeywordCandidates(photo: Photo): string[] {
+function toKeywordCandidates(photo: ArchivePhoto): string[] {
   const values: Array<string | number | undefined> = [
     photo.alt,
     photo.id,
@@ -344,7 +384,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = React.useTransition();
-  const [sourcePhotos, setSourcePhotos] = React.useState<Photo[]>([]);
+  const [sourcePhotos, setSourcePhotos] = React.useState<ArchivePhoto[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState<boolean>(false);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<{ id: number; message: string } | null>(null);
@@ -387,7 +427,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
         }
         const payload = (await response.json()) as ApiResponse;
         if (!cancelled) {
-          setSourcePhotos(payload.photos ?? []);
+          setSourcePhotos((payload.photos ?? []).map(normalizePhotoSensor));
           setLoadError(null);
         }
       } catch (error) {
@@ -437,10 +477,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   const availableSensors = React.useMemo(() => {
     return Array.from(
       new Set(
-        sourcePhotos.map((photo) => {
-          const sensor = photo.exif?.sensor ?? "UNKNOWN";
-          return SENSOR_TYPES.includes(sensor as SensorType) ? (sensor as SensorType) : "UNKNOWN";
-        })
+        sourcePhotos.map((photo) => sensorKindToType(photo.exif?.sensor ?? photo.sensor ?? "Unknown"))
       )
     ).filter((sensor): sensor is SensorType => SENSOR_TYPES.includes(sensor));
   }, [sourcePhotos]);
@@ -461,7 +498,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
         }
       }
       if (filters.sensor !== SENSOR_FILTER_ANY) {
-        const sensorValue = photo.exif?.sensor ?? "UNKNOWN";
+        const sensorValue = sensorKindToType(photo.exif?.sensor ?? photo.sensor ?? "Unknown");
         if (sensorValue !== filters.sensor) {
           return false;
         }
@@ -530,7 +567,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
       return;
     }
 
-    setSourcePhotos((current) => [...pendingUploads.map((item) => item.photo), ...current]);
+    setSourcePhotos((current) => [...pendingUploads.map((item) => normalizePhotoSensor(item.photo)), ...current]);
     setPendingUploads([]);
   }, [pendingUploads]);
 

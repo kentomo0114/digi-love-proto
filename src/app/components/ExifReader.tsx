@@ -108,6 +108,24 @@ const buildSummary = (data: Record<string, unknown> | null): SummaryItem[] => {
   return summary;
 };
 
+type ExifrParseOptions = {
+  tiff?: boolean;
+  ifd0?: Record<string, unknown>;
+  exif?: boolean;
+  xmp?: boolean;
+  icc?: boolean;
+  iptc?: boolean;
+};
+
+const EXIFR_OPTIONS: ExifrParseOptions = Object.freeze({
+  tiff: true,
+  ifd0: {},
+  exif: true,
+  xmp: true,
+  icc: true,
+  iptc: true,
+});
+
 export function ExifReader() {
   const [readings, setReadings] = React.useState<ExifReading[]>([]);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -120,7 +138,7 @@ export function ExifReader() {
     setGlobalError(null);
 
     const nextReadings: ExifReading[] = [];
-    let parse: (file: Blob, options?: unknown) => Promise<Record<string, unknown> | null>;
+    let parse: typeof import("exifr")["parse"];
     try {
       ({ parse } = await import("exifr"));
     } catch (error) {
@@ -131,7 +149,7 @@ export function ExifReader() {
 
     for (const file of Array.from(files)) {
       try {
-        const raw = (await parse(file, { xmp: true, icc: true, iptc: true })) as Record<string, unknown> | null;
+        const raw = (await parse(file, EXIFR_OPTIONS)) as Record<string, unknown> | null;
         const summary = buildSummary(raw);
         if (summary.length === 0) {
           summary.push({ label: "Notice", value: "No EXIF payload found in this image." });
