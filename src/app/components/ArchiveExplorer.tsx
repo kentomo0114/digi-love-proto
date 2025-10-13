@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import NextImage from "next/image";
 import { usePathname, useRouter, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
 
 import { ExploreGrid, type Photo } from "./ExploreGrid";
@@ -203,6 +204,9 @@ const buildSummary = (photo: ArchivePhoto, releaseYear?: number, isBlocked?: boo
 };
 
 async function getImageDimensions(url: string): Promise<{ width: number; height: number }> {
+  if (typeof window === "undefined" || typeof Image === "undefined") {
+    return { width: 1200, height: 800 };
+  }
   return new Promise((resolve) => {
     const image = new Image();
     image.onload = () => {
@@ -391,12 +395,18 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   const uploadInputRef = React.useRef<HTMLInputElement | null>(null);
   const [pendingUploads, setPendingUploads] = React.useState<PendingUpload[]>([]);
   const [isParsingUploads, setIsParsingUploads] = React.useState<boolean>(false);
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState<boolean>(false);
 
   const initialParsed = React.useMemo(() => parseFilters(syncWithUrl ? searchParams : null), [searchParams, syncWithUrl]);
 
   const [filters, setFilters] = React.useState<FilterState>(initialParsed.filters);
   const [keyword, setKeyword] = React.useState<string>(initialParsed.keyword);
 
+  const previewTitleId = React.useId();
+  const previewDescriptionId = React.useId();
+  const modalCloseButtonRef = React.useRef<HTMLButtonElement | null>(null);
+
+  const blockedCount = React.useMemo(() => pendingUploads.filter((item) => item.isBlocked).length, [pendingUploads]);
   const hasBlockedUploads = React.useMemo(() => pendingUploads.some((item) => item.isBlocked), [pendingUploads]);
 
   React.useEffect(() => {
@@ -543,6 +553,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
         const parsed = await Promise.all(Array.from(files).map((file) => parsePendingFile(file)));
         const valid = parsed.filter((item): item is PendingUpload => Boolean(item));
         setPendingUploads(valid);
+        setIsPreviewOpen(valid.length > 0);
       } catch (error) {
         console.error("Failed to process uploads", error);
       } finally {
@@ -561,7 +572,6 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
       return;
     }
 
-    const blockedCount = pendingUploads.filter((item) => item.isBlocked).length;
     if (blockedCount > 0) {
       setToast({ id: Date.now(), message: `${blockedCount}件は発売年が新しい機種です` });
       return;
@@ -569,23 +579,24 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
 
     setSourcePhotos((current) => [...pendingUploads.map((item) => normalizePhotoSensor(item.photo)), ...current]);
     setPendingUploads([]);
-  }, [pendingUploads]);
+    setIsPreviewOpen(false);
+  }, [blockedCount, pendingUploads, setSourcePhotos]);
 
-  const uploadDisabled = hasBlockedUploads && pendingUploads.length > 0;
   const hasPending = pendingUploads.length > 0;
 
   const handleUploadButtonClick = React.useCallback(() => {
     if (isParsingUploads) return;
-    if (pendingUploads.length > 0) {
-      if (uploadDisabled) {
-        setToast({ id: Date.now(), message: "最新機種が含まれているため追加できません" });
-        return;
-      }
-      handleConfirmUploads();
-    } else {
+    if (pendingUploads.length === 0) {
       uploadInputRef.current?.click();
+      return;
     }
-  }, [handleConfirmUploads, isParsingUploads, pendingUploads, uploadDisabled]);
+
+    setIsPreviewOpen(true);
+  }, [isParsingUploads, pendingUploads.length]);
+
+  const handleDismissPreview = React.useCallback(() => {
+    setIsPreviewOpen(false);
+  }, []);
 
   const pendingUploadsRef = React.useRef<PendingUpload[]>(pendingUploads);
 
@@ -598,6 +609,39 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
       cleanupPendingUploads(pendingUploadsRef.current);
     };
   }, [cleanupPendingUploads]);
+
+  React.useEffect(() => {
+    if (pendingUploads.length === 0) {
+      setIsPreviewOpen(false);
+    }
+  }, [pendingUploads.length]);
+
+  React.useEffect(() => {
+    if (!isPreviewOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsPreviewOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPreviewOpen]);
+
+  React.useEffect(() => {
+    if (!isPreviewOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    modalCloseButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isPreviewOpen]);
 
   return (
     <section className={className} style={{ paddingBottom: "calc(var(--s-4) * 2)" }}>
@@ -658,22 +702,15 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
                 <span className="sr-only">写真を選択</span>
               </button>
 
-              {!uploadDisabled && (
-                <button
-                  type="button"
-                  className="pixel-button upload-button"
-                  onClick={handleUploadButtonClick}
-                  disabled={isParsingUploads}
-                >
-                  OK
-                </button>
-              )}
-
-              {uploadDisabled && (
-                <button type="button" className="pixel-button" disabled>
-                  OK
-                </button>
-              )}
+              <button
+                type="button"
+                className="pixel-button upload-button"
+                onClick={handleUploadButtonClick}
+                disabled={isParsingUploads}
+                aria-label="EXIFプレビューを表示"
+              >
+                REVIEW
+              </button>
             </>
           )}
 
@@ -685,45 +722,92 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
           )}
         </div>
 
-        {pendingUploads.length > 0 && (
+        {isPreviewOpen && pendingUploads.length > 0 && (
           <div
-            className="upload-preview"
-            style={{
-              marginInline: "auto",
-              width: "min(100%, 720px)",
-            }}
+            className="upload-modal-backdrop"
+            role="presentation"
+            onClick={handleDismissPreview}
           >
-            <p
-              style={{
-                fontSize: "var(--fs-xs)",
-                letterSpacing: "var(--ls-wide)",
-                textTransform: "uppercase",
-                color: "var(--ink-soft)",
-              }}
+            <div
+              className="upload-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={previewTitleId}
+              aria-describedby={previewDescriptionId}
+              onClick={(event) => event.stopPropagation()}
             >
-              EXIF PREVIEW
-            </p>
+              <header className="upload-modal-header">
+                <div>
+                  <p className="upload-modal-kicker">Pending Upload</p>
+                  <h2 id={previewTitleId}>EXIF Preview</h2>
+                </div>
+                <button
+                  type="button"
+                  className="upload-modal-close"
+                  onClick={handleDismissPreview}
+                  aria-label="閉じる"
+                  ref={modalCloseButtonRef}
+                >
+                  X
+                </button>
+              </header>
 
-            <div className="upload-preview-list">
-              {pendingUploads.map((item) => (
-                <article key={item.id} className="upload-preview-card" data-blocked={item.isBlocked ? "true" : undefined}>
-                  <header className="upload-preview-header">
-                    <span>{item.fileName}</span>
-                    <span>{item.fileSize}</span>
-                  </header>
-                  {item.isBlocked && (
-                    <p className="upload-preview-warning">最新機種のため追加できません</p>
-                  )}
-                  <dl>
-                    {item.summary.map((entry) => (
-                      <div key={`${item.id}-${entry.label}`}>
-                        <dt>{entry.label}</dt>
-                        <dd>{entry.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </article>
-              ))}
+              <div className="upload-modal-body" id={previewDescriptionId}>
+                {pendingUploads.map((item) => (
+                  <div
+                    key={item.id}
+                    className="upload-modal-entry"
+                    data-blocked={item.isBlocked ? "true" : undefined}
+                  >
+                    <div className="upload-modal-photo">
+                      <NextImage
+                        src={item.photo.src}
+                        alt={item.photo.alt}
+                        width={item.photo.width || 1200}
+                        height={item.photo.height || 800}
+                        className="upload-modal-photo-image"
+                        sizes="(min-width: 900px) 460px, 100vw"
+                        style={{ width: "100%", height: "auto" }}
+                        unoptimized
+                      />
+                    </div>
+
+                    <div className="upload-preview-card" data-blocked={item.isBlocked ? "true" : undefined}>
+                      <header className="upload-preview-header">
+                        <span>{item.fileName}</span>
+                        <span>{item.fileSize}</span>
+                      </header>
+                      {item.isBlocked && (
+                        <p className="upload-preview-warning">最新機種のため追加できません</p>
+                      )}
+                      <dl>
+                        {item.summary.map((entry) => (
+                          <div key={`${item.id}-${entry.label}`}>
+                            <dt>{entry.label}</dt>
+                            <dd>{entry.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <footer className="upload-modal-footer">
+                <p className="upload-modal-footer-note">
+                  {hasBlockedUploads
+                    ? `最新機種が${blockedCount}件含まれているため追加できません。対象外のファイルを外してからやり直してください。`
+                    : "この内容でアーカイブに追加します。"}
+                </p>
+                <div className="upload-modal-footer-actions">
+                  <button type="button" className="pixel-button" onClick={handleDismissPreview}>
+                    Cancel
+                  </button>
+                  <button type="button" className="pixel-button upload-button" onClick={handleConfirmUploads}>
+                    {`Add ${pendingUploads.length}`}
+                  </button>
+                </div>
+              </footer>
             </div>
           </div>
         )}
