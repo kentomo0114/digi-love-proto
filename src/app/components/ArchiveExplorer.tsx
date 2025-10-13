@@ -391,11 +391,12 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   const [sourcePhotos, setSourcePhotos] = React.useState<ArchivePhoto[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState<boolean>(false);
   const [loadError, setLoadError] = React.useState<string | null>(null);
-  const [toast, setToast] = React.useState<{ id: number; message: string } | null>(null);
   const uploadInputRef = React.useRef<HTMLInputElement | null>(null);
   const [pendingUploads, setPendingUploads] = React.useState<PendingUpload[]>([]);
   const [isParsingUploads, setIsParsingUploads] = React.useState<boolean>(false);
   const [isPreviewOpen, setIsPreviewOpen] = React.useState<boolean>(false);
+  const [activePhoto, setActivePhoto] = React.useState<ArchivePhoto | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = React.useState<boolean>(false);
 
   const initialParsed = React.useMemo(() => parseFilters(syncWithUrl ? searchParams : null), [searchParams, syncWithUrl]);
 
@@ -405,9 +406,20 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   const previewTitleId = React.useId();
   const previewDescriptionId = React.useId();
   const modalCloseButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const viewerTitleId = React.useId();
+  const viewerDescriptionId = React.useId();
+  const photoModalCloseButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   const blockedCount = React.useMemo(() => pendingUploads.filter((item) => item.isBlocked).length, [pendingUploads]);
   const hasBlockedUploads = React.useMemo(() => pendingUploads.some((item) => item.isBlocked), [pendingUploads]);
+  const selectedPhotoSummary = React.useMemo(() => {
+    if (!activePhoto) return [];
+    const releaseYear = getCameraReleaseYear({
+      make: activePhoto.exif?.make,
+      model: activePhoto.exif?.camera,
+    });
+    return buildSummary(activePhoto, releaseYear, false).filter((entry) => entry.label !== "Status");
+  }, [activePhoto]);
 
   React.useEffect(() => {
     if (!syncWithUrl) return;
@@ -573,7 +585,6 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
     }
 
     if (blockedCount > 0) {
-      setToast({ id: Date.now(), message: `${blockedCount}件は発売年が新しい機種です` });
       return;
     }
 
@@ -598,6 +609,21 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
     setIsPreviewOpen(false);
   }, []);
 
+  const handlePhotoSelect = React.useCallback(
+    (photo: Photo) => {
+      const normalized = normalizePhotoSensor(photo as ArchivePhoto);
+      setActivePhoto(normalized);
+      setIsPhotoModalOpen(true);
+      setIsPreviewOpen(false);
+    },
+    []
+  );
+
+  const handleClosePhotoModal = React.useCallback(() => {
+    setIsPhotoModalOpen(false);
+    setActivePhoto(null);
+  }, []);
+
   const pendingUploadsRef = React.useRef<PendingUpload[]>(pendingUploads);
 
   React.useEffect(() => {
@@ -617,12 +643,18 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
   }, [pendingUploads.length]);
 
   React.useEffect(() => {
-    if (!isPreviewOpen) return;
+    if (!isPreviewOpen && !isPhotoModalOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        setIsPreviewOpen(false);
+        if (isPreviewOpen) {
+          setIsPreviewOpen(false);
+        }
+        if (isPhotoModalOpen) {
+          setIsPhotoModalOpen(false);
+          setActivePhoto(null);
+        }
       }
     };
 
@@ -630,18 +662,29 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPreviewOpen]);
+  }, [isPhotoModalOpen, isPreviewOpen]);
 
   React.useEffect(() => {
-    if (!isPreviewOpen) return;
+    if (!isPreviewOpen && !isPhotoModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    modalCloseButtonRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
     };
+  }, [isPhotoModalOpen, isPreviewOpen]);
+
+  React.useEffect(() => {
+    if (isPreviewOpen) {
+      modalCloseButtonRef.current?.focus();
+    }
   }, [isPreviewOpen]);
+
+  React.useEffect(() => {
+    if (isPhotoModalOpen) {
+      photoModalCloseButtonRef.current?.focus();
+    }
+  }, [isPhotoModalOpen]);
 
   return (
     <section className={className} style={{ paddingBottom: "calc(var(--s-4) * 2)" }}>
@@ -812,6 +855,80 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
           </div>
         )}
 
+        {isPhotoModalOpen && activePhoto && (
+          <div
+            className="upload-modal-backdrop"
+            role="presentation"
+            onClick={handleClosePhotoModal}
+          >
+            <div
+              className="upload-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={viewerTitleId}
+              aria-describedby={viewerDescriptionId}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="upload-modal-header">
+                <div>
+                  <p className="upload-modal-kicker">Archive Photo</p>
+                  <h2 id={viewerTitleId}>{activePhoto.alt}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="upload-modal-close"
+                  onClick={handleClosePhotoModal}
+                  aria-label="閉じる"
+                  ref={photoModalCloseButtonRef}
+                >
+                  X
+                </button>
+              </header>
+
+              <div className="upload-modal-body" id={viewerDescriptionId}>
+                <div className="upload-modal-entry">
+                  <div className="upload-modal-photo">
+                    <NextImage
+                      src={activePhoto.src}
+                      alt={activePhoto.alt}
+                      width={activePhoto.width || 1400}
+                      height={activePhoto.height || 936}
+                      className="upload-modal-photo-image"
+                      sizes="(min-width: 900px) 560px, 100vw"
+                      style={{ width: "100%", height: "auto" }}
+                      unoptimized
+                      priority
+                    />
+                  </div>
+
+                  <div className="upload-preview-card">
+                    <header className="upload-preview-header">
+                      <span>{activePhoto.exif?.camera ?? "Unknown camera"}</span>
+                      <span>{activePhoto.exif?.year ?? "—"}</span>
+                    </header>
+                    <dl>
+                      {selectedPhotoSummary.map((entry) => (
+                        <div key={`selected-${entry.label}-${entry.value}`}>
+                          <dt>{entry.label}</dt>
+                          <dd>{entry.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              </div>
+
+              <footer className="upload-modal-footer">
+                <div className="upload-modal-footer-actions">
+                  <button type="button" className="pixel-button upload-button" onClick={handleClosePhotoModal}>
+                    Close
+                  </button>
+                </div>
+              </footer>
+            </div>
+          </div>
+        )}
+
         {loadError && (
           <div
             style={{
@@ -842,7 +959,7 @@ export function ArchiveExplorer({ syncWithUrl = true, className }: ArchiveExplor
             Loading photo stories...
           </div>
         ) : (
-          <ExploreGrid photos={sortedPhotos} />
+          <ExploreGrid photos={sortedPhotos} onSelect={handlePhotoSelect} />
         )}
       </div>
     </section>

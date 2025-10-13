@@ -6,11 +6,12 @@ import { PhotoCard, type Photo } from "./PhotoCard";
 
 type ExploreGridProps = {
   photos: Photo[];
+  onSelect?: (photo: Photo) => void;
 };
 
 const BATCH_SIZE = 12;
 
-export function ExploreGrid({ photos }: ExploreGridProps) {
+export function ExploreGrid({ photos, onSelect }: ExploreGridProps) {
   const [visibleCount, setVisibleCount] = React.useState(BATCH_SIZE);
   const observerRef = React.useRef<IntersectionObserver | null>(null);
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
@@ -66,7 +67,7 @@ export function ExploreGrid({ photos }: ExploreGridProps) {
     <section className="space-y-12">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {visiblePhotos.map((photo) => (
-          <PhotoCard key={photo.id} photo={photo} />
+          <PhotoCard key={photo.id} photo={photo} onSelect={onSelect} />
         ))}
       </div>
       <div ref={sentinelRef} aria-hidden="true" className="h-10 w-full" />
