@@ -36,7 +36,8 @@
         "reveal": "never",
         "panel": "dedicated"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
     },
     {
       "label": "deploy:vercel",
