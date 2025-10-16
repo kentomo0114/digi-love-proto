@@ -42,7 +42,7 @@
     {
       "label": "deploy:vercel",
       "type": "shell",
-      "command": "vercel --prod",
+      "command": "npx vercel --prod",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"

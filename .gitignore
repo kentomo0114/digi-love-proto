@@ -8,3 +8,4 @@ out/
 npm-debug.log*
 yarn-*.log*
 pnpm-debug.log*
+.vercel
