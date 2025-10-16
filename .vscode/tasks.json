@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "sync:prompt",
+      "type": "shell",
+      "command": "git add -A && git commit -m '${input:commitMsg}' && git push",
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "sync:auto",
+      "type": "shell",
+      "command": "git add -A && git commit -m 'chore: sync ${CURRENT_DATE}' || echo 'no changes' && git push",
+      "options": {
+        "env": {
+          "CURRENT_DATE": "${currentDate:yyyy-MM-dd HH:mm}"
+        }
+      },
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "deploy:vercel",
+      "type": "shell",
+      "command": "vercel --prod",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "sync+deploy",
+      "dependsOn": [
+        "sync:auto",
+        "deploy:vercel"
+      ],
+      "dependsOrder": "sequence"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "commitMsg",
+      "type": "promptString",
+      "description": "Commit message",
+      "default": "chore: sync ${currentDate:yyyy-MM-dd HH:mm}"
+    }
+  ]
+}

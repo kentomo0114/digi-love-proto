@@ -1,0 +1,6 @@
+[
+  { "key": "ctrl+cmd+d", "command": "workbench.action.tasks.runTask", "args": "dev" },
+  { "key": "ctrl+cmd+p", "command": "workbench.action.tasks.runTask", "args": "sync:prompt" },
+  { "key": "ctrl+cmd+s", "command": "workbench.action.tasks.runTask", "args": "sync:auto" },
+  { "key": "ctrl+cmd+shift+p", "command": "workbench.action.tasks.runTask", "args": "sync+deploy" }
+]
