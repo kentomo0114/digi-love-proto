@@ -1,4 +1,5 @@
 import { Suspense, type CSSProperties } from "react";
+import Link from "next/link";
 
 import { ArchiveExplorer } from "../components/ArchiveExplorer";
 
@@ -47,6 +48,31 @@ export default function ArchivePage() {
           digi love
         </div>
       </div>
+
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Link
+          href="/about"
+          className="pixel-frame pixel-notch"
+          style={{
+            paddingInline: "var(--s-3)",
+            paddingBlock: "var(--s-2)",
+            fontSize: "var(--fs-sm)",
+            letterSpacing: "var(--ls-wide)",
+            textTransform: "uppercase",
+            color: "var(--ink)",
+            background: "var(--panel)",
+            textDecoration: "none",
+            boxShadow: "var(--shadow-soft)",
+          }}
+        >
+          about us
+        </Link>
+      </nav>
 
       <Suspense fallback={<div style={fallbackStyle}>Loading archive…</div>}>
         <ArchiveExplorer syncWithUrl />
